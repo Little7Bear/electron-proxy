@@ -1,8 +1,12 @@
 {
   "name": "vite-electron-builder",
   "description": "Secure boilerplate for Electron app based on Vite",
-  "version": "1.0.2",
+  "version": "1.0.0",
   "private": true,
+  "author": {
+    "email": "2395373083@qq.com",
+    "name": "Little7Bear"
+  },
   "main": "packages/main/dist/index.cjs",
   "scripts": {
     "build": "npm run build:main && npm run build:preload && npm run build:renderer",
