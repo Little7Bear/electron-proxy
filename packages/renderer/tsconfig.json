@@ -8,8 +8,9 @@
     "strict": true,
     "isolatedModules": true,
     "jsx": "preserve",
-    "types": ["node"],
+    "types": ["node", "element-plus/global"],
     "baseUrl": ".",
+    "allowSyntheticDefaultImports": true,
     "paths": {
       "#preload": ["../preload/src/index"],
       "/@/*": ["./src/*"]

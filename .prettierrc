@@ -11,11 +11,11 @@
     }
   ],
   "trailingComma": "all",
-  "bracketSpacing": false,
+  "bracketSpacing": true,
+  "bracketLine": true,
   "arrowParens": "avoid",
-  "proseWrap": "never",
   "htmlWhitespaceSensitivity": "strict",
   "vueIndentScriptAndStyle": false,
   "endOfLine": "lf",
-  "singleAttributePerLine": true
+  "singleAttributePerLine": false
 }

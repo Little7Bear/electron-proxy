@@ -1,10 +1,14 @@
 /* eslint-env node */
 
-import {chrome} from '../../.electron-vendors.cache.json';
+import { chrome } from '../../.electron-vendors.cache.json';
 import vue from '@vitejs/plugin-vue';
-import {renderer} from 'unplugin-auto-expose';
-import {join} from 'node:path';
-import {injectAppVersion} from '../../version/inject-app-version-plugin.mjs';
+import { renderer } from 'unplugin-auto-expose';
+import { join } from 'node:path';
+import { injectAppVersion } from '../../version/inject-app-version-plugin.mjs';
+import AutoImport from 'unplugin-auto-import/vite';
+import Components from 'unplugin-vue-components/vite';
+import { ElementPlusResolver } from 'unplugin-vue-components/resolvers';
+import path from 'path';
 
 const PACKAGE_ROOT = __dirname;
 const PROJECT_ROOT = join(PACKAGE_ROOT, '../..');
@@ -48,7 +52,23 @@ const config = {
       preloadEntry: join(PACKAGE_ROOT, '../preload/src/index.ts'),
     }),
     injectAppVersion(),
+    AutoImport({
+      resolvers: [ElementPlusResolver()],
+    }),
+    Components({
+      resolvers: [ElementPlusResolver()],
+    }),
   ],
+  css: {
+    preprocessorOptions: {
+      scss: {
+        // 引入全局变量
+        additionalData: `@import "${path
+          .resolve(PACKAGE_ROOT, './src/styles/variables.scss')
+          .replace(/\\/g, '/')}";`,
+      },
+    },
+  },
 };
 
 export default config;

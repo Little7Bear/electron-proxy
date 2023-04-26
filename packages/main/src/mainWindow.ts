@@ -1,6 +1,7 @@
-import {app, BrowserWindow} from 'electron';
-import {join, resolve} from 'node:path';
+import { app, BrowserWindow, Menu, Tray } from 'electron';
+import { join, resolve } from 'node:path';
 
+let tray = null; // 在外面创建tray变量，防止被自动删除，导致图标自动消失
 async function createWindow() {
   const browserWindow = new BrowserWindow({
     show: false, // Use the 'ready-to-show' event to show the instantiated BrowserWindow.
@@ -27,6 +28,36 @@ async function createWindow() {
     if (import.meta.env.DEV) {
       browserWindow?.webContents.openDevTools();
     }
+  });
+
+  // 创建任务栏图标
+  tray = new Tray(join(__dirname, '../images', 'icon.png'));
+  // 自定义托盘图标的内容菜单
+  const contextMenu = Menu.buildFromTemplate([
+    {
+      // 点击退出菜单退出程序
+      label: '退出',
+      click: function () {
+        browserWindow.destroy();
+        app.quit();
+      },
+    },
+  ]);
+  tray.setToolTip('小代'); // 设置鼠标指针在托盘图标上悬停时显示的文本
+  tray.setContextMenu(contextMenu); // 设置图标的内容菜单
+  // 点击托盘图标，显示主窗口
+  tray.on('click', () => {
+    browserWindow.show();
+  });
+
+  browserWindow.on('close', e => {
+    e.preventDefault();
+    browserWindow.setSkipTaskbar(true);
+    browserWindow.hide();
+  });
+
+  browserWindow.on('show', () => {
+    browserWindow.setSkipTaskbar(false);
   });
 
   /**
