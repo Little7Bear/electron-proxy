@@ -1,7 +1,7 @@
-import { app, BrowserWindow, Menu, Tray } from 'electron';
-import { join, resolve } from 'node:path';
-
+import { app, BrowserWindow, Menu, nativeImage, Tray } from 'electron';
+import { dirname, join, resolve } from 'node:path';
 let tray = null; // 在外面创建tray变量，防止被自动删除，导致图标自动消失
+
 async function createWindow() {
   const browserWindow = new BrowserWindow({
     show: false, // Use the 'ready-to-show' event to show the instantiated BrowserWindow.
@@ -30,8 +30,20 @@ async function createWindow() {
     }
   });
 
+  browserWindow.on('close', e => {
+    e.preventDefault();
+    browserWindow.setSkipTaskbar(true);
+    browserWindow.hide();
+  });
+
   // 创建任务栏图标
-  tray = new Tray(join(__dirname, '../images', 'icon.png'));
+  let iconPath = '';
+  if (process.env.MODE === 'development') {
+    iconPath = join(__dirname, '../../../public/icon.png');
+  } else {
+    iconPath = join(dirname(app.getPath('exe')), '/resources/public/icon.png');
+  }
+  tray = new Tray(nativeImage.createFromPath(iconPath));
   // 自定义托盘图标的内容菜单
   const contextMenu = Menu.buildFromTemplate([
     {
@@ -47,17 +59,10 @@ async function createWindow() {
   tray.setContextMenu(contextMenu); // 设置图标的内容菜单
   // 点击托盘图标，显示主窗口
   tray.on('click', () => {
-    browserWindow.show();
-  });
-
-  browserWindow.on('close', e => {
-    e.preventDefault();
-    browserWindow.setSkipTaskbar(true);
-    browserWindow.hide();
-  });
-
-  browserWindow.on('show', () => {
-    browserWindow.setSkipTaskbar(false);
+    browserWindow.isVisible() ? browserWindow.hide() : browserWindow.show();
+    browserWindow.isVisible()
+      ? browserWindow.setSkipTaskbar(false)
+      : browserWindow.setSkipTaskbar(true);
   });
 
   /**
