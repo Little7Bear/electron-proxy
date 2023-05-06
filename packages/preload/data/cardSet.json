@@ -1,1 +1,11 @@
-[{"title":"dev","value":"https://dev-biz-api.iotomp.com"},{"title":"fat","value":"https://fat-biz-api.iotomp.com"},{"title":"release","value":"https://biz-api.iotomp.com"}]
+[
+  { "title": "dev通用", "value": "https://dev-one-api.iotomp.com/v2" },
+  { "title": "dev2通用", "value": "https://dev2-one-api.iotomp.com/v2" },
+  { "title": "fat通用", "value": "https://fat-one-api.iotomp.com/v2" },
+  { "title": "fatg通用", "value": "https://fatg-one-api.iotomp.com/v2" },
+  { "title": "release通用", "value": "https://one-api.iotomp.com/v2" },
+  { "title": "release通用eu", "value": "https://euone-api.iotomp.com/v2" },
+  { "title": "dev商用", "value": "https://dev-biz-api.iotomp.com" },
+  { "title": "fat商用", "value": "https://fat-biz-api.iotomp.com" },
+  { "title": "release商用", "value": "https://biz-api.iotomp.com" }
+]
