@@ -1,7 +1,8 @@
 import { writeFile, readFile, existsSync } from 'fs';
-import { resolve } from 'path';
+import { resolve } from 'node:path';
 
-const filename = resolve(__dirname, '../data/cardSet.json');
+let filePath = '';
+filePath = resolve(__dirname, '../../../public/cardSet.json');
 
 /**
  * @description: 写入
@@ -9,7 +10,7 @@ const filename = resolve(__dirname, '../data/cardSet.json');
  */
 export function save(json: string) {
   return new Promise((resolve, reject) => {
-    writeFile(filename, json, err => {
+    writeFile(filePath, json, err => {
       if (err) {
         reject(err);
       }
@@ -23,8 +24,8 @@ export function save(json: string) {
  */
 export function read(): Promise<string> {
   return new Promise((resolve, reject) => {
-    if (!existsSync(filename)) resolve('');
-    readFile(filename, 'utf8', (err, data) => {
+    if (!existsSync(filePath)) resolve('');
+    readFile(filePath, 'utf8', (err, data) => {
       if (err) {
         reject(err);
       }

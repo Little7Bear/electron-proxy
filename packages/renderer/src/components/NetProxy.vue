@@ -36,6 +36,7 @@
   </el-form>
 
   <el-dialog v-model="dialogVisible" title="卡片配置" width="600px" :before-close="handleClose">
+    <el-button :icon="Plus" type="primary" @click="onTableAdd"></el-button>
     <el-table :data="tableData" style="width: 100%">
       <el-table-column prop="title" label="title" width="120px">
         <template #default="{ row }">
@@ -46,17 +47,7 @@
         <template #default="{ row, $index }">
           <div class="d-flex">
             <el-input v-model="row.value" class="flex-1" style="width: 100%; margin-right: 10px" />
-            <el-button
-              v-if="tableData.length !== 0"
-              :icon="Minus"
-              @click="onTableMinus($index)"
-            ></el-button>
-            <el-button
-              v-if="$index === tableData.length - 1"
-              :icon="Plus"
-              type="primary"
-              @click="onTableAdd"
-            ></el-button>
+            <el-button :icon="Minus" @click="onTableMinus($index)"></el-button>
           </div>
         </template>
       </el-table-column>
@@ -72,7 +63,8 @@
 
 <script lang="ts" setup>
 import { reactive, ref } from 'vue';
-import { createProxyServer, setSave, setRead, serveClose } from '#preload';
+import { createProxyServer, serveClose } from '#preload';
+import { getStorageData, setStorageData } from '/@/utils/index';
 import type { FormInstance, FormRules } from 'element-plus';
 import 'element-plus/es/components/message/style/css';
 import 'element-plus/es/components/message-box/style/css';
@@ -84,13 +76,14 @@ const form = reactive({
   port: 8466,
 });
 
-const urls = ref([
-  { title: 'dev', value: 'https://dev-biz-api.iotomp.com' },
-  { title: 'fat', value: 'https://fat-biz-api.iotomp.com' },
-  { title: 'release', value: 'https://biz-api.iotomp.com' },
-]);
+type Url = {
+  title: string;
+  value: string;
+};
 
-let url = ref(urls.value[0].value);
+const urls = ref<Url[]>([]);
+
+let url = ref('');
 
 const rules = reactive<FormRules>({
   port: [{ required: true, message: '不能为空', trigger: 'blur' }],
@@ -117,15 +110,9 @@ const onSwitchUrl = (value: string) => {
   submitForm(ruleFormRef.value);
 };
 
-const fetchData = async () => {
-  try {
-    const data = await setRead();
-    if (data) {
-      urls.value = JSON.parse(data);
-    }
-  } catch (error) {
-    console.log('读取数据错误', error);
-  }
+const fetchData = () => {
+  const data = getStorageData('urls');
+  if (data) urls.value = data;
 };
 fetchData();
 
@@ -157,14 +144,10 @@ const setShow = () => {
   dialogVisible.value = true;
 };
 
-const setConfirm = async () => {
-  try {
-    urls.value = tableData.value;
-    await setSave(JSON.stringify(urls.value));
-    dialogVisible.value = false;
-  } catch (err: any) {
-    ElMessage.error('保存错误', err);
-  }
+const setConfirm = () => {
+  urls.value = tableData.value;
+  setStorageData('urls', urls.value);
+  dialogVisible.value = false;
 };
 
 const onTableAdd = () => {
