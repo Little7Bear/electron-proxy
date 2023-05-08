@@ -21,7 +21,6 @@ export function createProxyServer(target: string, port: number) {
       const prefix = proxyReq.host.split('-')[0];
       proxyReq.path = replaceUrlParam(proxyReq.path, 'systemDomain', prefix + '-one.iotomp.com');
     }
-    proxyReq.setHeader('X-Special-Proxy-Header', 'foobar');
   });
 }
 
