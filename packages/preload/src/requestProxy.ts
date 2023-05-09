@@ -1,8 +1,14 @@
-// import http from 'node:http';
-import httpProxy from 'http-proxy';
+import express from 'express';
+import { urlencoded, json } from 'body-parser';
+import { createProxyMiddleware } from 'http-proxy-middleware';
+import type { IncomingMessage, Server, ServerResponse } from 'node:http';
 
-// 创建代理服务器
-let proxy = httpProxy.createProxyServer({});
+const app = express();
+app.use(urlencoded({ extended: true }));
+app.use(json());
+
+let server: Server<typeof IncomingMessage, typeof ServerResponse>;
+let systemDomain = '';
 
 /**
  * @description:创建代理服务器并将所有请求（请求头、请求体）都转发到指定的目标 URL。主要用于在开发中测试和调试，模拟真实生产环境。
@@ -10,17 +16,38 @@ let proxy = httpProxy.createProxyServer({});
  * @return {*}
  */
 export function createProxyServer(target: string, port: number) {
-  if (proxy) proxy.close();
+  close();
 
-  proxy = httpProxy
-    .createProxyServer({ target, secure: false, ws: true, changeOrigin: true })
-    .listen(port);
+  const proxy = createProxyMiddleware('/', {
+    target,
+    ws: false,
+    changeOrigin: true,
+    secure: false,
+    onProxyReq: function (proxyReq, req) {
+      if (getMatchParams(proxyReq.path, 'systemDomain')) {
+        const prefix = proxyReq.host.split('-')[0];
+        systemDomain = prefix + '-one.iotomp.com';
+        proxyReq.path = replaceUrlParam(proxyReq.path, 'systemDomain', systemDomain);
+      }
 
-  proxy.on('proxyReq', function (proxyReq) {
-    if (proxyReq.path.includes('/system/company/conf/getLoginPageConfInfo')) {
-      const prefix = proxyReq.host.split('-')[0];
-      proxyReq.path = replaceUrlParam(proxyReq.path, 'systemDomain', prefix + '-one.iotomp.com');
-    }
+      if (req.body && Object.getOwnPropertyNames(req.body).length) {
+        if (req.body && req.body.systemDomain) {
+          req.body.systemDomain = systemDomain;
+        }
+        const bodyData = JSON.stringify(req.body);
+        proxyReq.setHeader('Content-Type', 'application/json');
+        proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData));
+        proxyReq.write(bodyData);
+      }
+    },
+    onError: function (err, req, res) {
+      res.json({ code: '500', msg: '转发异常', action: req.path });
+    },
+  });
+
+  app.use(proxy);
+  server = app.listen(port, () => {
+    console.log(`Server listening on port ${port}`);
   });
 }
 
@@ -28,7 +55,11 @@ export function createProxyServer(target: string, port: number) {
  * @description: 关闭代理
  */
 export function close() {
-  if (proxy) proxy.close();
+  if (server) {
+    server.close(() => {
+      console.log('Server stopped');
+    });
+  }
 }
 
 function replaceUrlParam(url: string, paramName: string, paramValue: string) {
@@ -37,4 +68,14 @@ function replaceUrlParam(url: string, paramName: string, paramValue: string) {
     return url.replace(pattern, '$1' + paramValue + '$2');
   }
   return url + (url.indexOf('?') > 0 ? '&' : '?') + paramName + '=' + paramValue;
+}
+
+function getMatchParams(url: string, param: string) {
+  let result = '';
+  const reg = new RegExp('[?&]' + param + '=([^&]*)', 'i');
+  const matches = url.match(reg);
+  if (matches && matches.length) {
+    result = decodeURIComponent(matches[1]);
+  }
+  return result;
 }
