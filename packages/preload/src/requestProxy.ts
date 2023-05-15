@@ -24,9 +24,9 @@ export function createProxyServer(target: string, port: number) {
     changeOrigin: true,
     secure: false,
     onProxyReq: function (proxyReq, req) {
+      const prefix = proxyReq.host.split('-')[0];
+      systemDomain = prefix + '-one.iotomp.com';
       if (getMatchParams(proxyReq.path, 'systemDomain')) {
-        const prefix = proxyReq.host.split('-')[0];
-        systemDomain = prefix + '-one.iotomp.com';
         proxyReq.path = replaceUrlParam(proxyReq.path, 'systemDomain', systemDomain);
       }
 
@@ -47,7 +47,7 @@ export function createProxyServer(target: string, port: number) {
 
   app.use(proxy);
   server = app.listen(port, () => {
-    console.log(`Server listening on port ${port}`);
+    console.log(`Server listening on ${target}`);
   });
 }
 
