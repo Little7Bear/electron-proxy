@@ -35,6 +35,16 @@
     </el-form-item>
   </el-form>
 
+  <div class="info">
+    <template v-if="isStart">
+      <div>服务启动于：</div>
+      <div class="info-address"> {{ info }}</div>
+    </template>
+    <template v-else>
+      <div>服务已关闭</div>
+    </template>
+  </div>
+
   <el-dialog v-model="dialogVisible" title="卡片配置" width="600px" :before-close="handleClose">
     <el-button :icon="Plus" type="primary" @click="onTableAdd"></el-button>
     <el-table :data="tableData" style="width: 100%">
@@ -63,7 +73,7 @@
 
 <script lang="ts" setup>
 import { reactive, ref } from 'vue';
-import { createProxyServer, serveClose } from '#preload';
+import { createProxyServer, serveClose, ip } from '#preload';
 import { getStorageData, setStorageData } from '/@/utils/index';
 import type { FormInstance, FormRules } from 'element-plus';
 import 'element-plus/es/components/message/style/css';
@@ -86,15 +96,26 @@ const urls = ref<Url[]>([]);
 let url = ref('');
 
 const rules = reactive<FormRules>({
-  port: [{ required: true, message: '不能为空', trigger: 'blur' }],
+  port: [{ required: true, message: '端口号不能为空', trigger: 'blur' }],
 });
 
+const info = ref('');
+const isStart = ref(false);
 const submitForm = async (formEl: FormInstance | undefined) => {
+  if (!url.value) return ElMessage.warning('请选择地址');
   if (!formEl) return;
   await formEl.validate((valid, fields) => {
     if (valid) {
-      createProxyServer(url.value, form.port);
-      ElMessage.success('服务启动成功');
+      try {
+        createProxyServer(url.value, form.port);
+        ElMessage.success('服务启动成功');
+        info.value = `http://${ip}:${form.port}
+      http://localhost:${form.port}`;
+        isStart.value = true;
+      } catch (error) {
+        console.log(error);
+        ElMessage.error('服务启动失败');
+      }
     } else {
       console.log('error submit!', fields);
     }
@@ -123,7 +144,8 @@ const onNetClose = () => {
     type: 'warning',
   }).then(() => {
     serveClose();
-    ElMessage.success('服务已关闭');
+    ElMessage.success('关闭成功');
+    isStart.value = false;
   });
 };
 
@@ -201,5 +223,15 @@ const onTableMinus = (index: number) => {
 
 .flex-1 {
   flex: 1;
+}
+
+.info {
+  color: #333;
+  white-space: pre-line;
+  line-height: 1.5;
+
+  .info-address {
+    color: var(--el-color-primary);
+  }
 }
 </style>

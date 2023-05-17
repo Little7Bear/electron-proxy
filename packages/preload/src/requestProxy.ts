@@ -2,6 +2,7 @@ import express from 'express';
 import { urlencoded, json } from 'body-parser';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import type { IncomingMessage, Server, ServerResponse } from 'node:http';
+import os from 'os';
 
 const app = express();
 app.use(urlencoded({ extended: true }));
@@ -9,10 +10,43 @@ app.use(json());
 
 let server: Server<typeof IncomingMessage, typeof ServerResponse>;
 let systemDomain = '';
+const myIp = getIPAdress();
+
+function replaceUrlParam(url: string, paramName: string, paramValue: string) {
+  const pattern = new RegExp('\\b(' + paramName + '=).*?(&|$)');
+  if (url.search(pattern) >= 0) {
+    return url.replace(pattern, '$1' + paramValue + '$2');
+  }
+  return url + (url.indexOf('?') > 0 ? '&' : '?') + paramName + '=' + paramValue;
+}
+
+function getMatchParams(url: string, param: string) {
+  let result = '';
+  const reg = new RegExp('[?&]' + param + '=([^&]*)', 'i');
+  const matches = url.match(reg);
+  if (matches && matches.length) {
+    result = decodeURIComponent(matches[1]);
+  }
+  return result;
+}
+
+function getIPAdress() {
+  const interfaces = os.networkInterfaces();
+  for (const devName in interfaces) {
+    const iface = interfaces[devName] as os.NetworkInterfaceInfo[];
+    for (let i = 0; i < iface.length; i++) {
+      const alias = iface[i];
+      if (alias.family === 'IPv4' && alias.address !== '127.0.0.1' && !alias.internal) {
+        return alias.address;
+      }
+    }
+  }
+}
 
 /**
  * @description:创建代理服务器并将所有请求（请求头、请求体）都转发到指定的目标 URL。主要用于在开发中测试和调试，模拟真实生产环境。
  * @param {string} target 目标 URL 地址
+ * @param {number} port 端口
  * @return {*}
  */
 export function createProxyServer(target: string, port: number) {
@@ -47,7 +81,7 @@ export function createProxyServer(target: string, port: number) {
 
   app.use(proxy);
   server = app.listen(port, () => {
-    console.log(`Server listening on ${target}`);
+    console.log(`Server listening on http://${myIp}:${port}, agent to ${target}`);
   });
 }
 
@@ -62,20 +96,4 @@ export function close() {
   }
 }
 
-function replaceUrlParam(url: string, paramName: string, paramValue: string) {
-  const pattern = new RegExp('\\b(' + paramName + '=).*?(&|$)');
-  if (url.search(pattern) >= 0) {
-    return url.replace(pattern, '$1' + paramValue + '$2');
-  }
-  return url + (url.indexOf('?') > 0 ? '&' : '?') + paramName + '=' + paramValue;
-}
-
-function getMatchParams(url: string, param: string) {
-  let result = '';
-  const reg = new RegExp('[?&]' + param + '=([^&]*)', 'i');
-  const matches = url.match(reg);
-  if (matches && matches.length) {
-    result = decodeURIComponent(matches[1]);
-  }
-  return result;
-}
+export const ip = myIp;
