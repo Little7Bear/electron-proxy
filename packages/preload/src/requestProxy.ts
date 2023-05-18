@@ -1,16 +1,14 @@
+import type { Express } from 'express';
 import express from 'express';
 import { urlencoded, json } from 'body-parser';
 import { createProxyMiddleware } from 'http-proxy-middleware';
 import type { IncomingMessage, Server, ServerResponse } from 'node:http';
 import os from 'os';
 
-const app = express();
-app.use(urlencoded({ extended: true }));
-app.use(json());
-
 let server: Server<typeof IncomingMessage, typeof ServerResponse>;
 let systemDomain = '';
 const myIp = getIPAdress();
+let app: Express;
 
 function replaceUrlParam(url: string, paramName: string, paramValue: string) {
   const pattern = new RegExp('\\b(' + paramName + '=).*?(&|$)');
@@ -49,15 +47,18 @@ function getIPAdress() {
  * @param {number} port 端口
  * @return {*}
  */
-export function createProxyServer(target: string, port: number) {
-  close();
+export async function createProxyServer(target: string, port: number) {
+  app = express();
+  app.use(urlencoded({ extended: true }));
+  app.use(json());
+  await close();
 
-  const proxy = createProxyMiddleware('/', {
+  const proxy = createProxyMiddleware({
     target,
     ws: false,
     changeOrigin: true,
     secure: false,
-    onProxyReq: function (proxyReq, req) {
+    onProxyReq(proxyReq, req) {
       const prefix = proxyReq.host.split('-')[0];
       systemDomain = prefix + '-one.iotomp.com';
       if (getMatchParams(proxyReq.path, 'systemDomain')) {
@@ -65,34 +66,28 @@ export function createProxyServer(target: string, port: number) {
       }
 
       if (req.body && Object.getOwnPropertyNames(req.body).length) {
-        if (req.body && req.body.systemDomain) {
-          req.body.systemDomain = systemDomain;
-        }
+        if (req.body.systemDomain) req.body.systemDomain = systemDomain;
         const bodyData = JSON.stringify(req.body);
         proxyReq.setHeader('Content-Type', 'application/json');
         proxyReq.setHeader('Content-Length', Buffer.byteLength(bodyData));
         proxyReq.write(bodyData);
       }
     },
-    onError: function (err, req, res) {
+    onError(err, req, res) {
       res.json({ code: '500', msg: '转发异常', action: req.path });
     },
   });
 
   app.use(proxy);
-  server = app.listen(port, () => {
-    console.log(`Server listening on http://${myIp}:${port}, agent to ${target}`);
-  });
+  server = await app.listen(port);
 }
 
 /**
  * @description: 关闭代理
  */
-export function close() {
+export async function close() {
   if (server) {
-    server.close(() => {
-      console.log('Server stopped');
-    });
+    await server.close();
   }
 }
 
